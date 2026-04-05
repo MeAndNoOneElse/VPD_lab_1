@@ -53,16 +53,16 @@ for i = 1:n_files
         % График угла поворота
         figure(1);
         subplot(2, 5, i);
-        plot(time, angle_deg, 'b.', 'MarkerSize', 6);
+        plot(time, angle_deg, 'b-', 'LineWidth', 1.2);
         xlabel('Время, с');
-        ylabel('Угол, рад');
+        ylabel('Угол, °');
         title(sprintf('U = %d%%', U_pr));
         grid on;
 
         % График угловой скорости
         figure(2);
         subplot(2, 5, i);
-        plot(time, omega_deg, 'b.', 'MarkerSize', 6);
+        plot(time, omega_deg, 'b-', 'LineWidth', 1.2);
         xlabel('Время, с');
         ylabel('Скорость, рад/с');
         title(sprintf('U = %d%%', U_pr));
@@ -151,7 +151,7 @@ for i = 1:n_files
             time = data(:, 1);
             angle_deg = data(:, 2);
 
-            plot(time, angle_deg, 'b.', 'MarkerSize', 8);
+            plot(time, angle_deg, 'b-', 'LineWidth', 1.2);
             hold on;
 
             time_apr = 0:0.01:max(time);
@@ -178,7 +178,7 @@ for i = 1:n_files
             time = data(:, 1);
             omega_deg = data(:, 3);
 
-            plot(time, omega_deg, 'b.', 'MarkerSize', 8);
+            plot(time, omega_deg, 'b-', 'LineWidth', 1.2);
             hold on;
 
             time_apr = 0:0.01:max(time);
@@ -206,10 +206,18 @@ end
 valid_idx = ~isnan(k_all) & ~isnan(Tm_all);
 omega_ust_rad = k_all.* voltages' * 180 / pi; % в град/с
 
-% График   скорости
+% График установившейся скорости
 figure(101);
-plot(voltages(valid_idx), omega_ust_rad(valid_idx), 'bo', ...
-     'MarkerSize', 10, 'MarkerFaceColor', 'b');
+
+% Сортируем данные по возрастанию напряжения для корректного соединения линиями
+[~, sort_idx] = sort(voltages(valid_idx));
+x_sorted = voltages(valid_idx);
+y_omega = omega_ust_rad(valid_idx);
+y_Tm = Tm_all(valid_idx) * 1000;
+y_k = k_all(valid_idx) * 180/pi;
+
+plot(voltages(valid_idx), omega_ust_rad(valid_idx), 'b-o', ...
+     'MarkerSize', 8, 'MarkerFaceColor', 'b', 'LineWidth', 1.5);
 hold on;
 
 p = polyfit(voltages(valid_idx), omega_ust_rad(valid_idx), 1);
@@ -226,8 +234,8 @@ saveas(gcf, fullfile(parameters_folder, 'omega_steady.png'));
 
 % График Tm
 figure(102);
-plot(voltages(valid_idx), Tm_all(valid_idx) * 1000, 'rs', ...
-     'MarkerSize', 10, 'MarkerFaceColor', 'r');
+plot(voltages(valid_idx), Tm_all(valid_idx) * 1000, 'r-s', ...
+     'MarkerSize', 8, 'MarkerFaceColor', 'r', 'LineWidth', 1.5);
 xlabel('Напряжение U, %');
 ylabel('Постоянная времени T_m, мс');
 title('Зависимость постоянной времени от напряжения');
@@ -236,8 +244,8 @@ saveas(gcf, fullfile(parameters_folder, 'Tm.png'));
 
 % График k
 figure(103);
-plot(voltages(valid_idx), k_all(valid_idx) * 180/pi, 'gs', ...
-     'MarkerSize', 10, 'MarkerFaceColor', 'g');
+plot(voltages(valid_idx), k_all(valid_idx) * 180/pi, 'g-s', ...
+     'MarkerSize', 8, 'MarkerFaceColor', 'g', 'LineWidth', 1.5);
 xlabel('Напряжение U, %');
 ylabel('k, град/(с·%%)');
 title('Зависимость коэффициента k от напряжения');
@@ -290,7 +298,11 @@ if license('test', 'Simulink')
                 omega_sim = omega_var.Data(:);
                 theta_sim = theta_var.Data(:);
 
-                key = sprintf('U_%d', U_pr);
+                if U_pr < 0
+                    key = sprintf('U_m%d', abs(U_pr));
+                else
+                    key = sprintf('U_%d', U_pr);
+                end
                 sim_results.(key).time = time_sim;
                 sim_results.(key).omega = omega_sim;
                 sim_results.(key).theta = theta_sim;
@@ -300,7 +312,7 @@ if license('test', 'Simulink')
                 figure(200 + i);
 
                 subplot(2,1,1);
-                plot(time_exp, data(:,2), 'b.', 'MarkerSize', 6, 'DisplayName', 'Эксперимент');
+                plot(time_exp, data(:,2), 'b-', 'LineWidth', 1.2, 'DisplayName', 'Эксперимент');
                 hold on;
                 plot(time_sim, theta_sim * 180/pi, 'r-', 'LineWidth', 2, 'DisplayName', 'Simulink');
 
@@ -316,7 +328,7 @@ if license('test', 'Simulink')
                 grid on;
 
                 subplot(2,1,2);
-                plot(time_exp, data(:,3), 'b.', 'MarkerSize', 6, 'DisplayName', 'Эксперимент');
+                plot(time_exp, data(:,3), 'b-', 'LineWidth', 1.2, 'DisplayName', 'Эксперимент');
                 hold on;
                 plot(time_sim, omega_sim * 180/pi, 'r-', 'LineWidth', 2, 'DisplayName', 'Simulink');
                 plot(time_apr, k_sim * U_pr * (1 - exp(-time_apr/Tm_sim)) * 180/pi, 'g--', 'LineWidth', 1.5, 'DisplayName', 'Аппроксимация');
@@ -348,7 +360,7 @@ if license('test', 'Simulink')
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-    %% TODO сравнение жксперемента и симуляции
+    %% TODO сравнение эксперемента и симуляции
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     figure(310);
@@ -362,48 +374,92 @@ if license('test', 'Simulink')
             data = readmatrix(filename);
             time_exp = data(:, 1);
 
-            key = sprintf('U_%d', U_pr);
+            if U_pr < 0
+                key = sprintf('U_m%d', abs(U_pr));
+            else
+                key = sprintf('U_%d', U_pr);
+            end
             if isfield(sim_results, key)
                 time_sim = sim_results.(key).time;
                 theta_sim = sim_results.(key).theta;
 
-                plot(time_exp, data(:,2), '.', 'Color', colors(j,:), 'MarkerSize', 4);
+                plot(time_exp, data(:,2), '-', 'Color', colors(j,:), 'LineWidth', 1.2);
                 hold on;
-                plot(time_sim, theta_sim * 180/pi, '-', 'Color', colors(j,:), 'LineWidth', 1.5, ...
-                     'DisplayName', sprintf('U = %d%%', U_pr));
             end
         end
     end
+    % Аппроксимация одним цветом для всех
+    for j = 1:n_files
+        U_pr = voltages(j);
+        if ~isnan(k_all(j)) && ~isnan(Tm_all(j))
+            if U_pr < 0
+                key = sprintf('U_m%d', abs(U_pr));
+            else
+                key = sprintf('U_%d', U_pr);
+            end
+            if isfield(sim_results, key)
+                time_sim = sim_results.(key).time;
+                theta_sim = sim_results.(key).theta;
+                plot(time_sim, theta_sim * 180/pi, '-k', 'LineWidth', 0.4); hold on;
+            end
+        end
+    end
+    % Легенда: эксперимент по напряжениям + одна аппроксимация
+    all_labels = arrayfun(@(v) sprintf('U = %d%%', v), voltages, 'UniformOutput', false);
+    all_labels{end+1} = 'Аппроксимация';
+    legend(all_labels, 'Location', 'best');
     xlabel('Время, с');
     ylabel('Угол, град');
     title('Сравнение эксперимента и Simulink для всех напряжений (угол поворота)');
-    legend('Location', 'best');
     grid on;
     saveas(gcf, fullfile(comparison_folder, 'all_angles_comparison.png'));
     close(gcf);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Velocity comparison
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     figure(311);
+    colors = lines(n_files);
+
     for j = 1:n_files
         U_pr = voltages(j);
         if ~isnan(k_all(j)) && ~isnan(Tm_all(j))
             filename = fullfile(data_folder, sprintf('data%d', U_pr));
             data = readmatrix(filename);
             time_exp = data(:, 1);
-            key = sprintf('U_%d', U_pr);
+            if U_pr < 0
+                key = sprintf('U_m%d', abs(U_pr));
+            else
+                key = sprintf('U_%d', U_pr);
+            end
             if isfield(sim_results, key)
                 time_sim = sim_results.(key).time;
                 omega_sim = sim_results.(key).omega;
-                plot(time_exp, data(:,3), '.', 'Color', colors(j,:), 'MarkerSize', 4);
+                plot(time_exp, data(:,3), '-', 'Color', colors(j,:), 'LineWidth', 1.2);
                 hold on;
-                plot(time_sim, omega_sim * 180/pi, '-', 'Color', colors(j,:), 'LineWidth', 1.5, ...
-                     'DisplayName', sprintf('U = %d%%', U_pr));
             end
         end
     end
-
-    xlabel('Время, с');
-    ylabel('Скорость, град/с');
-    title('Сравнение эксперимента и Simulink для всех напряжений (угловая скорость)');
-    legend('Location', 'best');
+    % Аппроксимация одним цветом для всех
+    for j = 1:n_files
+        U_pr = voltages(j);
+        if ~isnan(k_all(j)) && ~isnan(Tm_all(j))
+            if U_pr < 0
+                key = sprintf('U_m%d', abs(U_pr));
+            else
+                key = sprintf('U_%d', U_pr);
+            end
+            if isfield(sim_results, key)
+                time_sim = sim_results.(key).time;
+                omega_sim = sim_results.(key).omega;
+                plot(time_sim, omega_sim * 180/pi, '-k', 'LineWidth', 0.7); hold on;
+            end
+        end
+    end
+    % Легенда
+    all_labels_v = arrayfun(@(v) sprintf('U = %d%%', v), voltages, 'UniformOutput', false);
+    all_labels_v{end+1} = 'Аппроксимация';
+    legend(all_labels_v, 'Location', 'best');
     grid on;
     saveas(gcf, fullfile(comparison_folder, 'all_velocities_comparison.png'));
     close(gcf);

@@ -32,47 +32,43 @@
 \usepackage{listings}
 \usepackage{src/title} % Убедитесь, что этот файл существует
 
-% Настройки листинга (упрощенные)
-\definecolor{intj-bg}{HTML}{2B2B2B}
-\definecolor{intj-key}{HTML}{CC7832}
-\definecolor{intj-str}{HTML}{6A8759}
-\definecolor{intj-comm}{HTML}{808080}
-\definecolor{intj-id}{HTML}{A9B7C6}
-\definecolor{intj-num}{HTML}{6897BB}
+% Устанавливает отступы на странице
+\geometry{left=2cm, right=2cm, bottom=2cm, top=2cm}
 
+% Настараиваем красивые цвета для ссылок на формулы, фигуры (изображения) и другие элементы.
+\hypersetup{
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan
+}
 
-\lstdefinestyle{intellij}{
-    language=Python,
-    backgroundcolor=\color{intj-bg},
-    basicstyle=\ttfamily\small\color{intj-id},
-    keywordstyle=\color{intj-key}\bfseries,
-    stringstyle=\color{intj-str},
-    commentstyle=\itshape\color{intj-comm},
-    numberstyle=\color{intj-comm}\tiny,
-    stepnumber=1,
-    frame=single,
-    rulecolor=\color{intj-comm},
-    showstringspaces=false,
+% Настраиваем супер красивые листинги с попомщью пакетов listings и xcolor
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{codestyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
     breaklines=true,
-    tabsize=4,
-    extendedchars=true,
-}
-\lstdefinestyle{intellij2}{
-    language=Matlab,
-    backgroundcolor=\color{intj-bg},
-    basicstyle=\ttfamily\small\color{intj-id},
-    keywordstyle=\color{intj-key}\bfseries,
-    stringstyle=\color{intj-str},
-    commentstyle=\itshape\color{intj-comm},
-    numberstyle=\color{intj-comm}\tiny,
-    stepnumber=1,
-    frame=single,
-    rulecolor=\color{intj-comm},
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
     showstringspaces=false,
-    breaklines=true,
-    tabsize=4,
-    extendedchars=true,
+    showtabs=false,
+    tabsize=2
 }
+
+\lstset{style=codestyle}
+\lstset{extendedchars=\true}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Заполнение титульного листа
@@ -136,20 +132,96 @@
         \label{fig:motor_scheme}
     \end{figure}
 
-    \subsection{Математическая модель двигателя}
-    Для описания динамики двигателя используется классическая модель, представленная в теоретической части. Исследуемый двигатель в первом приближении можно рассматривать как апериодическое звено первого порядка:
-    \begin{equation}
-        W(s) = \frac{k}{T_m s + 1} \Leftrightarrow T_m \frac{d\omega(t)}{dt} + \omega(t) = k \cdot u(t)
-        \label{eq:transfer_function}
-    \end{equation}
-    где \(k\) — коэффициент передачи (рад/(с·\%)), \(T_m\) — электромеханическая постоянная времени (с), \(\omega(t)\) — угловая скорость (рад/с), \(u(t)\) — управляющее напряжение в процентах от максимального.
 
-    При ступенчатом входе \(u(t) = U_0 \cdot \mathbf{1}(t)\):
-    \begin{equation}
-        \omega(t) = k \cdot U_0 (1 - e^{-t/T_m}), \quad \theta(t) = \int_0^t \omega(\tau) d\tau = k U_0 \left( t - T_m (1 - e^{-t/T_m}) \right)
-        \label{eq:step_response}
-    \end{equation}
-    \newpage
+\subsection{Математическая модель двигателя}
+
+Для описания динамики двигателя постоянного тока с постоянными магнитами рассмотрим два основных физических закона.
+
+\paragraph{Второй закон Ньютона для вращательного движения:}
+Суммарный вращающий момент, действующий на ротор, равен произведению момента инерции на угловое ускорение:
+\begin{equation}
+J \frac{d\omega(t)}{dt} = M_{\text{em}}(t) - M_{\text{нагр}}(t),
+\label{eq:newton}
+\end{equation}
+где $J$ — момент инерции ротора (кг·м$^2$), $\omega$ — угловая скорость (рад/с), $M_{\text{em}}$ — электромагнитный момент двигателя (Н·м).
+В данной работе двигатель не нагружен, поэтому $M_{\text{нагр}} = 0$.
+
+Электромагнитный момент пропорционален току якоря:
+\begin{equation}
+M_{\text{em}}(t) = k_m I(t),
+\label{eq:torque}
+\end{equation}
+где $k_m$ — коэффициент момента (Н·м/А), $I$ — ток в обмотках (А).
+
+\paragraph{Закон Ома для цепи якоря:}
+При вращении ротора в обмотках наводится противо-ЭДС $\varepsilon_i = -k_e \omega(t)$, препятствующая изменению тока. С учётом этого закон Ома принимает вид:
+\begin{equation}
+U(t) - k_e \omega(t) = I(t) R,
+\label{eq:ohm}
+\end{equation}
+где $U$ — поданное на двигатель напряжение (В), $R$ — сопротивление обмоток (Ом), $k_e$ — коэффициент противо-ЭДС (В·с/рад).
+
+\paragraph{Вывод дифференциального уравнения:}
+Выразим ток из \eqref{eq:ohm}:
+\begin{equation}
+I(t) = \frac{U(t) - k_e \omega(t)}{R}.
+\end{equation}
+Подставим в \eqref{eq:torque}, а затем в \eqref{eq:newton}:
+\begin{equation}
+J \frac{d\omega(t)}{dt} = k_m \cdot \frac{U(t) - k_e \omega(t)}{R}.
+\end{equation}
+Раскроем скобки и перенесём слагаемое с $\omega$ в левую часть:
+\begin{equation}
+J \frac{d\omega(t)}{dt} + \frac{k_m k_e}{R} \omega(t) = \frac{k_m}{R} U(t).
+\end{equation}
+Разделим обе части на $J$:
+\begin{equation}
+\frac{d\omega(t)}{dt} + \frac{k_m k_e}{JR} \omega(t) = \frac{k_m}{JR} U(t).
+\label{eq:diff_raw}
+\end{equation}
+
+\paragraph{Введение постоянной времени и коэффициента передачи:}
+Введём электромеханическую постоянную времени $T_m$ и статический коэффициент передачи по напряжению $k_U$:
+\begin{equation}
+T_m = \frac{JR}{k_m k_e}, \qquad k_U = \frac{1}{k_e}.
+\end{equation}
+Тогда уравнение \eqref{eq:diff_raw} принимает классический вид апериодического звена первого порядка:
+\begin{equation}
+T_m \frac{d\omega(t)}{dt} + \omega(t) = k_U \cdot U(t).
+\label{eq:aperiodic}
+\end{equation}
+
+\paragraph{Переход к управляющему сигналу в процентах:}
+В экспериментальной установке напряжение подаётся в процентах от максимального ($U_{\text{max}} = 9$ В). Обозначим $u(t)$ — управляющий сигнал (\%). Тогда:
+\begin{equation}
+U(t) = \frac{u(t)}{100} U_{\text{max}}.
+\end{equation}
+Подставляя в \eqref{eq:aperiodic}, получаем:
+\begin{equation}
+T_m \frac{d\omega(t)}{dt} + \omega(t) = k \cdot u(t),
+\label{eq:final}
+\end{equation}
+где
+\begin{equation}
+k = \frac{U_{\text{max}}}{100 \cdot k_e} \quad \text{(рад/(с·\%))}.
+\end{equation}
+
+\paragraph{Решение для ступенчатого входного сигнала:}
+При подаче постоянного напряжения $u(t) = U_0 \cdot \mathbf{1}(t)$ решение уравнения \eqref{eq:final} имеет вид:
+\begin{equation}
+\omega(t) = k U_0 \left(1 - e^{-t/T_m}\right),
+\label{eq:omega_solution}
+\end{equation}
+а угол поворота получается интегрированием скорости:
+\begin{equation}
+\theta(t) = \int_0^t \omega(\tau) d\tau = k U_0 \left( t - T_m \left(1 - e^{-t/T_m}\right) \right).
+\label{eq:theta_solution}
+\end{equation}
+
+Таким образом, динамика двигателя EV3 в первом приближении описывается передаточной функцией апериодического звена:
+\begin{equation}
+W(s) = \frac{k}{T_m s + 1}.
+\end{equation}
 
 
     \section{Экспериментальная установка и методика}
@@ -477,7 +549,7 @@
     \section{Программы}
 
     \subsection{Программа EV3}
-    \begin{lstlisting}[style=intellij,basicstyle=\color{intj-id}]
+     \begin{lstlisting}[language=Python]
 from ev3dev2.motor import LargeMotor, OUTPUT_B
 import time
 
@@ -517,7 +589,8 @@ finally:
     \end{lstlisting}
 
     \subsection{MATLAB Program}
-   \begin{lstlisting}[style=intellij2,basicstyle=\color{intj-id}]
+
+       \begin{lstlisting}[language=MatLab]
 clear all; close all; clc;
 data_folder = '../data';
 graphs_folder = 'graphs';
